@@ -226,6 +226,43 @@ async def handle_list_tools() -> list[types.Tool]:
             }
         ),
         types.Tool(
+            name="get_help_center_sections",
+            description="List all Help Center sections",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        types.Tool(
+            name="get_section_articles",
+            description="Get all articles in a specific Help Center section by section ID",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "section_id": {
+                        "type": "integer",
+                        "description": "The ID of the Help Center section"
+                    }
+                },
+                "required": ["section_id"]
+            }
+        ),
+        types.Tool(
+            name="search_articles",
+            description="Search Help Center articles by keyword query",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query string"
+                    }
+                },
+                "required": ["query"]
+            }
+        ),
+        types.Tool(
             name="update_ticket",
             description="Update fields on an existing Zendesk ticket (e.g., status, priority, assignee_id)",
             inputSchema={
@@ -321,6 +358,31 @@ async def handle_call_tool(
             return [types.TextContent(
                 type="text",
                 text=f"Comment created successfully: {result}"
+            )]
+
+        elif name == "get_help_center_sections":
+            sections = zendesk_client.get_sections()
+            return [types.TextContent(
+                type="text",
+                text=json.dumps(sections, indent=2)
+            )]
+
+        elif name == "get_section_articles":
+            if not arguments:
+                raise ValueError("Missing arguments")
+            articles = zendesk_client.get_section_articles(arguments["section_id"])
+            return [types.TextContent(
+                type="text",
+                text=json.dumps(articles, indent=2)
+            )]
+
+        elif name == "search_articles":
+            if not arguments:
+                raise ValueError("Missing arguments")
+            results = zendesk_client.search_articles(arguments["query"])
+            return [types.TextContent(
+                type="text",
+                text=json.dumps(results, indent=2)
             )]
 
         elif name == "update_ticket":

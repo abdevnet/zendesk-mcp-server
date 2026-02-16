@@ -182,6 +182,58 @@ class ZendeskClient:
         except Exception as e:
             raise Exception(f"Failed to fetch knowledge base: {str(e)}")
 
+    def get_sections(self) -> List[Dict[str, Any]]:
+        try:
+            sections = self.client.help_center.sections()
+            return [{
+                'id': section.id,
+                'name': section.name,
+                'description': section.description,
+                'html_url': getattr(section, 'html_url', None)
+            } for section in sections]
+        except Exception as e:
+            raise Exception(f"Failed to fetch sections: {str(e)}")
+
+    def get_section_articles(self, section_id: int) -> Dict[str, Any]:
+        try:
+            section = self.client.help_center.sections(id=section_id)
+            articles = self.client.help_center.sections.articles(section_id)
+            return {
+                'section_id': section_id,
+                'section_name': getattr(section, 'name', ''),
+                'articles': [{
+                    'id': article.id,
+                    'title': article.title,
+                    'body': article.body,
+                    'updated_at': str(article.updated_at),
+                    'url': article.html_url
+                } for article in articles]
+            }
+        except Exception as e:
+            raise Exception(f"Failed to fetch articles for section {section_id}: {str(e)}")
+
+    def search_articles(self, query: str) -> List[Dict[str, Any]]:
+        try:
+            url = f"{self.base_url}/help_center/articles/search.json?query={urllib.parse.quote(query)}"
+            req = urllib.request.Request(url)
+            req.add_header('Authorization', self.auth_header)
+            req.add_header('Content-Type', 'application/json')
+            with urllib.request.urlopen(req) as response:
+                data = json.loads(response.read().decode())
+            return [{
+                'id': r.get('id'),
+                'title': r.get('title'),
+                'body': r.get('body'),
+                'section_id': r.get('section_id'),
+                'updated_at': r.get('updated_at'),
+                'url': r.get('html_url')
+            } for r in data.get('results', [])]
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode() if e.fp else "No response body"
+            raise Exception(f"Failed to search articles: HTTP {e.code} - {e.reason}. {error_body}")
+        except Exception as e:
+            raise Exception(f"Failed to search articles: {str(e)}")
+
     def create_ticket(
         self,
         subject: str,
