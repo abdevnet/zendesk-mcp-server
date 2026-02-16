@@ -249,14 +249,38 @@ async def handle_list_tools() -> list[types.Tool]:
             }
         ),
         types.Tool(
+            name="get_article",
+            description="Get a single Help Center article by ID, including full body content",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "article_id": {
+                        "type": "integer",
+                        "description": "The ID of the article to retrieve"
+                    }
+                },
+                "required": ["article_id"]
+            }
+        ),
+        types.Tool(
             name="search_articles",
-            description="Search Help Center articles by keyword query",
+            description="Search Help Center articles by keyword query. Returns metadata only (use get_article for full content).",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
                         "description": "Search query string"
+                    },
+                    "per_page": {
+                        "type": "integer",
+                        "description": "Results per page (max 100)",
+                        "default": 25
+                    },
+                    "page": {
+                        "type": "integer",
+                        "description": "Page number",
+                        "default": 1
                     }
                 },
                 "required": ["query"]
@@ -376,10 +400,23 @@ async def handle_call_tool(
                 text=json.dumps(articles, indent=2)
             )]
 
+        elif name == "get_article":
+            if not arguments:
+                raise ValueError("Missing arguments")
+            article = zendesk_client.get_article(arguments["article_id"])
+            return [types.TextContent(
+                type="text",
+                text=json.dumps(article, indent=2)
+            )]
+
         elif name == "search_articles":
             if not arguments:
                 raise ValueError("Missing arguments")
-            results = zendesk_client.search_articles(arguments["query"])
+            results = zendesk_client.search_articles(
+                query=arguments["query"],
+                per_page=arguments.get("per_page", 25),
+                page=arguments.get("page", 1)
+            )
             return [types.TextContent(
                 type="text",
                 text=json.dumps(results, indent=2)

@@ -204,7 +204,6 @@ class ZendeskClient:
                 'articles': [{
                     'id': article.id,
                     'title': article.title,
-                    'body': article.body,
                     'updated_at': str(article.updated_at),
                     'url': article.html_url
                 } for article in articles]
@@ -212,22 +211,55 @@ class ZendeskClient:
         except Exception as e:
             raise Exception(f"Failed to fetch articles for section {section_id}: {str(e)}")
 
-    def search_articles(self, query: str) -> List[Dict[str, Any]]:
+    def get_article(self, article_id: int) -> Dict[str, Any]:
         try:
-            url = f"{self.base_url}/help_center/articles/search.json?query={urllib.parse.quote(query)}"
+            url = f"{self.base_url}/help_center/articles/{article_id}.json"
             req = urllib.request.Request(url)
             req.add_header('Authorization', self.auth_header)
             req.add_header('Content-Type', 'application/json')
             with urllib.request.urlopen(req) as response:
                 data = json.loads(response.read().decode())
-            return [{
-                'id': r.get('id'),
-                'title': r.get('title'),
-                'body': r.get('body'),
-                'section_id': r.get('section_id'),
-                'updated_at': r.get('updated_at'),
-                'url': r.get('html_url')
-            } for r in data.get('results', [])]
+            a = data.get('article', {})
+            return {
+                'id': a.get('id'),
+                'title': a.get('title'),
+                'body': a.get('body'),
+                'section_id': a.get('section_id'),
+                'updated_at': a.get('updated_at'),
+                'url': a.get('html_url')
+            }
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode() if e.fp else "No response body"
+            raise Exception(f"Failed to get article {article_id}: HTTP {e.code} - {e.reason}. {error_body}")
+        except Exception as e:
+            raise Exception(f"Failed to get article {article_id}: {str(e)}")
+
+    def search_articles(self, query: str, per_page: int = 25, page: int = 1) -> Dict[str, Any]:
+        try:
+            per_page = min(per_page, 100)
+            params = urllib.parse.urlencode({
+                'query': query,
+                'per_page': str(per_page),
+                'page': str(page)
+            })
+            url = f"{self.base_url}/help_center/articles/search.json?{params}"
+            req = urllib.request.Request(url)
+            req.add_header('Authorization', self.auth_header)
+            req.add_header('Content-Type', 'application/json')
+            with urllib.request.urlopen(req) as response:
+                data = json.loads(response.read().decode())
+            return {
+                'results': [{
+                    'id': r.get('id'),
+                    'title': r.get('title'),
+                    'section_id': r.get('section_id'),
+                    'updated_at': r.get('updated_at'),
+                    'url': r.get('html_url')
+                } for r in data.get('results', [])],
+                'count': data.get('count', 0),
+                'page': page,
+                'per_page': per_page
+            }
         except urllib.error.HTTPError as e:
             error_body = e.read().decode() if e.fp else "No response body"
             raise Exception(f"Failed to search articles: HTTP {e.code} - {e.reason}. {error_body}")
