@@ -160,3 +160,36 @@ Update fields on an existing Zendesk ticket (e.g., status, priority, assignee)
   - `tags` (array[string], optional)
   - `custom_fields` (array[object], optional)
   - `due_at` (string, optional): ISO8601 datetime
+
+### get_help_center_sections
+
+List all Help Center sections
+
+- Input: None
+- Output: Returns a list of sections with id, name, description, and URL
+
+### get_section_articles
+
+Get all articles in a specific Help Center section (metadata only)
+
+- Input:
+  - `section_id` (integer): The ID of the Help Center section
+- Output: Returns article metadata (id, title, updated_at, URL) without body content
+
+### get_article
+
+Get a single Help Center article by ID, including full body content
+
+- Input:
+  - `article_id` (integer): The ID of the article to retrieve
+- Output: Returns full article including HTML body content
+
+### search_articles
+
+Search Help Center articles by keyword query (metadata only)
+
+- Input:
+  - `query` (string): Search query string
+  - `per_page` (integer, optional): Results per page, max 100 (defaults to 25)
+  - `page` (integer, optional): Page number (defaults to 1)
+- Output: Returns matching article metadata with pagination info. Use `get_article` to fetch full content for a specific result.
