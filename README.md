@@ -3,6 +3,8 @@
 ![ci](https://github.com/reminia/zendesk-mcp-server/actions/workflows/ci.yml/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
+Forked from [reminia/zendesk-mcp-server](https://github.com/reminia/zendesk-mcp-server) with additional Help Center article tools.
+
 A Model Context Protocol server for Zendesk.
 
 This server provides a comprehensive integration with Zendesk. It offers:
