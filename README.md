@@ -9,7 +9,7 @@ A Model Context Protocol server for Zendesk.
 
 This server provides a comprehensive integration with Zendesk. It offers:
 
-- Tools for retrieving and managing Zendesk tickets and comments
+- Tools for searching, retrieving, and managing Zendesk tickets and comments
 - Specialized prompts for ticket analysis and response drafting
 - Full access to the Zendesk Help Center articles as knowledge base
 
@@ -162,6 +162,18 @@ Update fields on an existing Zendesk ticket (e.g., status, priority, assignee)
   - `tags` (array[string], optional)
   - `custom_fields` (array[object], optional)
   - `due_at` (string, optional): ISO8601 datetime
+
+### search_tickets
+
+Search Zendesk tickets by keyword query using the Zendesk Search API
+
+- Input:
+  - `query` (string): Search query (supports [Zendesk search syntax](https://support.zendesk.com/hc/en-us/articles/4408886879258) e.g. `status:open assignee:me`, `subject:keyword`)
+  - `per_page` (integer, optional): Results per page, max 100 (defaults to 25)
+  - `page` (integer, optional): Page number (defaults to 1)
+  - `sort_by` (string, optional): Sort by field - created_at, updated_at, priority, or status (defaults to updated_at)
+  - `sort_order` (string, optional): Sort order - asc or desc (defaults to desc)
+- Output: Returns matching ticket metadata (id, subject, status, priority, timestamps, requester/assignee IDs) with pagination info
 
 ### get_help_center_sections
 
