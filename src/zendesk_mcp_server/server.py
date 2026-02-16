@@ -287,6 +287,40 @@ async def handle_list_tools() -> list[types.Tool]:
             }
         ),
         types.Tool(
+            name="search_tickets",
+            description="Search Zendesk tickets by keyword query. Supports Zendesk search syntax (e.g. 'status:open assignee:me', 'subject:keyword').",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query (supports Zendesk search syntax)"
+                    },
+                    "per_page": {
+                        "type": "integer",
+                        "description": "Results per page (max 100)",
+                        "default": 25
+                    },
+                    "page": {
+                        "type": "integer",
+                        "description": "Page number",
+                        "default": 1
+                    },
+                    "sort_by": {
+                        "type": "string",
+                        "description": "Sort by field (created_at, updated_at, priority, status)",
+                        "default": "updated_at"
+                    },
+                    "sort_order": {
+                        "type": "string",
+                        "description": "Sort order (asc or desc)",
+                        "default": "desc"
+                    }
+                },
+                "required": ["query"]
+            }
+        ),
+        types.Tool(
             name="update_ticket",
             description="Update fields on an existing Zendesk ticket (e.g., status, priority, assignee_id)",
             inputSchema={
@@ -416,6 +450,21 @@ async def handle_call_tool(
                 query=arguments["query"],
                 per_page=arguments.get("per_page", 25),
                 page=arguments.get("page", 1)
+            )
+            return [types.TextContent(
+                type="text",
+                text=json.dumps(results, indent=2)
+            )]
+
+        elif name == "search_tickets":
+            if not arguments:
+                raise ValueError("Missing arguments")
+            results = zendesk_client.search_tickets(
+                query=arguments["query"],
+                per_page=arguments.get("per_page", 25),
+                page=arguments.get("page", 1),
+                sort_by=arguments.get("sort_by", "updated_at"),
+                sort_order=arguments.get("sort_order", "desc")
             )
             return [types.TextContent(
                 type="text",

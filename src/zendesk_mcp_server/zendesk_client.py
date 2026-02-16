@@ -266,6 +266,44 @@ class ZendeskClient:
         except Exception as e:
             raise Exception(f"Failed to search articles: {str(e)}")
 
+    def search_tickets(self, query: str, per_page: int = 25, page: int = 1, sort_by: str = 'updated_at', sort_order: str = 'desc') -> Dict[str, Any]:
+        try:
+            per_page = min(per_page, 100)
+            full_query = f'{query} type:ticket'
+            params = urllib.parse.urlencode({
+                'query': full_query,
+                'per_page': str(per_page),
+                'page': str(page),
+                'sort_by': sort_by,
+                'sort_order': sort_order
+            })
+            url = f"{self.base_url}/search.json?{params}"
+            req = urllib.request.Request(url)
+            req.add_header('Authorization', self.auth_header)
+            req.add_header('Content-Type', 'application/json')
+            with urllib.request.urlopen(req) as response:
+                data = json.loads(response.read().decode())
+            return {
+                'results': [{
+                    'id': t.get('id'),
+                    'subject': t.get('subject'),
+                    'status': t.get('status'),
+                    'priority': t.get('priority'),
+                    'created_at': t.get('created_at'),
+                    'updated_at': t.get('updated_at'),
+                    'requester_id': t.get('requester_id'),
+                    'assignee_id': t.get('assignee_id')
+                } for t in data.get('results', [])],
+                'count': data.get('count', 0),
+                'page': page,
+                'per_page': per_page
+            }
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode() if e.fp else "No response body"
+            raise Exception(f"Failed to search tickets: HTTP {e.code} - {e.reason}. {error_body}")
+        except Exception as e:
+            raise Exception(f"Failed to search tickets: {str(e)}")
+
     def create_ticket(
         self,
         subject: str,
