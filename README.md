@@ -39,22 +39,28 @@ This server provides a comprehensive integration with Zendesk. It offers:
 
 ### Docker
 
-You can containerize the server if you prefer an isolated runtime:
+A pre-built image is published to GitHub Container Registry on every push to `main`:
 
-1. Copy `.env.example` to `.env` and fill in your Zendesk credentials. Keep this file outside version control.
-2. Build the image:
+```bash
+docker pull ghcr.io/abdevnet/zendesk-mcp-server:latest
+```
 
-   ```bash
-   docker build -t zendesk-mcp-server .
-   ```
+Copy `.env.example` to `.env` and fill in your Zendesk credentials, then run:
 
-3. Run the server, providing the environment file:
+```bash
+docker run --rm --env-file /path/to/.env ghcr.io/abdevnet/zendesk-mcp-server:latest
+```
 
-   ```bash
-   docker run --rm --env-file /path/to/.env zendesk-mcp-server
-   ```
+Add `-i` when wiring the container to MCP clients over STDIN/STDOUT (Claude Code uses this mode). For daemonized runs, add `-d --name zendesk-mcp`.
 
-   Add `-i` when wiring the container to MCP clients over STDIN/STDOUT (Claude Code uses this mode). For daemonized runs, add `-d --name zendesk-mcp`.
+#### Building locally
+
+If you prefer to build from source:
+
+```bash
+docker build -t zendesk-mcp-server .
+docker run --rm --env-file /path/to/.env zendesk-mcp-server
+```
 
 The image installs dependencies from `requirements.lock`, drops privileges to a non-root user, and expects configuration exclusively via environment variables.
 
@@ -73,7 +79,7 @@ To use the Dockerized server from Claude Code/Desktop, add an entry to Claude Co
         "-i",
         "--env-file",
         "/path/to/zendesk-mcp-server/.env",
-        "zendesk-mcp-server"
+        "ghcr.io/abdevnet/zendesk-mcp-server:latest"
       ]
     }
   }
