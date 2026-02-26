@@ -213,3 +213,24 @@ Search Help Center articles by keyword query (metadata only)
   - `per_page` (integer, optional): Results per page, max 100 (defaults to 25)
   - `page` (integer, optional): Page number (defaults to 1)
 - Output: Returns matching article metadata with pagination info. Use `get_article` to fetch full content for a specific result.
+
+### update_article
+
+Update an existing Help Center article (title, body, draft status, etc.)
+
+- Input:
+  - `article_id` (integer, required): The ID of the article to update
+  - `title` (string, optional): New title for the article
+  - `body` (string, optional): New HTML body content
+  - `label_names` (array of strings, optional): Labels for the article
+- Output: Returns the updated article. Articles are saved as drafts.
+
+### update_article_from_markdown
+
+Update a Help Center article from a local markdown file. Converts markdown to HTML automatically using the `extra` and `codehilite` extensions (supports tables, fenced code blocks, footnotes, etc.).
+
+- Input:
+  - `article_id` (integer, required): The ID of the article to update
+  - `file_path` (string, required): Path to the local `.md` file
+  - `title` (string, optional): Override article title (keeps existing if omitted)
+- Output: Returns the updated article. Articles are saved as drafts.
