@@ -237,7 +237,7 @@ class ZendeskClient:
         except Exception as e:
             raise Exception(f"Failed to get article {article_id}: {str(e)}")
 
-    def update_article_from_markdown(self, article_id: int, file_path: str, title: Optional[str] = None) -> Dict[str, Any]:
+    def update_article_from_markdown(self, article_id: int, file_path: str, title: Optional[str] = None, locale: str = "en-us") -> Dict[str, Any]:
         resolved = os.path.expanduser(file_path)
         if not os.path.isfile(resolved):
             raise FileNotFoundError(f"Markdown file not found: {resolved}")
@@ -251,28 +251,26 @@ class ZendeskClient:
         if title is not None:
             fields['title'] = title
 
-        return self.update_article(article_id, **fields)
+        return self.update_article(article_id, locale=locale, **fields)
 
-    def update_article(self, article_id: int, **fields: Any) -> Dict[str, Any]:
+    def update_article(self, article_id: int, locale: str = "en-us", **fields: Any) -> Dict[str, Any]:
         try:
-            fields['draft'] = True
-            url = f"{self.base_url}/help_center/articles/{article_id}.json"
-            payload = json.dumps({"article": fields}).encode('utf-8')
+            url = f"{self.base_url}/help_center/articles/{article_id}/translations/{locale}.json"
+            payload = json.dumps({"translation": fields}).encode('utf-8')
             req = urllib.request.Request(url, data=payload, method='PUT')
             req.add_header('Authorization', self.auth_header)
             req.add_header('Content-Type', 'application/json')
             with urllib.request.urlopen(req) as response:
                 data = json.loads(response.read().decode())
-            a = data.get('article', {})
+            t = data.get('translation', {})
             return {
-                'id': a.get('id'),
-                'title': a.get('title'),
-                'body': a.get('body'),
-                'draft': a.get('draft'),
-                'promoted': a.get('promoted'),
-                'section_id': a.get('section_id'),
-                'updated_at': a.get('updated_at'),
-                'url': a.get('html_url')
+                'id': t.get('id'),
+                'title': t.get('title'),
+                'body': t.get('body'),
+                'draft': t.get('draft'),
+                'locale': t.get('locale'),
+                'updated_at': t.get('updated_at'),
+                'url': t.get('html_url')
             }
         except urllib.error.HTTPError as e:
             error_body = e.read().decode() if e.fp else "No response body"

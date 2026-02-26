@@ -322,14 +322,15 @@ async def handle_list_tools() -> list[types.Tool]:
         ),
         types.Tool(
             name="update_article",
-            description="Update an existing Help Center article (title, body, draft status, etc.)",
+            description="Update an existing Help Center article translation (title, body, draft status). Uses the Zendesk Translations API.",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "article_id": {"type": "integer", "description": "The ID of the article to update"},
                     "title": {"type": "string", "description": "New title for the article"},
                     "body": {"type": "string", "description": "New HTML body content"},
-                    "label_names": {"type": "array", "items": {"type": "string"}, "description": "Labels for the article"}
+                    "draft": {"type": "boolean", "description": "True to save as draft, false to publish (default: true)", "default": True},
+                    "locale": {"type": "string", "description": "Locale of the translation to update (default: en-us)", "default": "en-us"}
                 },
                 "required": ["article_id"]
             }
@@ -502,7 +503,9 @@ async def handle_call_tool(
             if not arguments:
                 raise ValueError("Missing arguments")
             article_id = arguments.pop("article_id")
-            updated = zendesk_client.update_article(article_id=article_id, **arguments)
+            locale = arguments.pop("locale", "en-us")
+            arguments.setdefault("draft", True)
+            updated = zendesk_client.update_article(article_id=article_id, locale=locale, **arguments)
             return [types.TextContent(
                 type="text",
                 text=json.dumps({"message": "Article updated successfully", "article": updated}, indent=2)
