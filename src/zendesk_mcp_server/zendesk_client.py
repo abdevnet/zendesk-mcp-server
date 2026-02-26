@@ -1,8 +1,11 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import json
+import os
 import urllib.request
 import urllib.parse
 import base64
+
+import markdown
 
 from zenpy import Zenpy
 from zenpy.lib.api_objects import Comment
@@ -233,6 +236,49 @@ class ZendeskClient:
             raise Exception(f"Failed to get article {article_id}: HTTP {e.code} - {e.reason}. {error_body}")
         except Exception as e:
             raise Exception(f"Failed to get article {article_id}: {str(e)}")
+
+    def update_article_from_markdown(self, article_id: int, file_path: str, title: Optional[str] = None) -> Dict[str, Any]:
+        resolved = os.path.expanduser(file_path)
+        if not os.path.isfile(resolved):
+            raise FileNotFoundError(f"Markdown file not found: {resolved}")
+
+        with open(resolved, 'r', encoding='utf-8') as f:
+            md_content = f.read()
+
+        html_body = markdown.markdown(md_content, extensions=['extra', 'codehilite'])
+
+        fields: Dict[str, Any] = {'body': html_body}
+        if title is not None:
+            fields['title'] = title
+
+        return self.update_article(article_id, **fields)
+
+    def update_article(self, article_id: int, **fields: Any) -> Dict[str, Any]:
+        try:
+            fields['draft'] = True
+            url = f"{self.base_url}/help_center/articles/{article_id}.json"
+            payload = json.dumps({"article": fields}).encode('utf-8')
+            req = urllib.request.Request(url, data=payload, method='PUT')
+            req.add_header('Authorization', self.auth_header)
+            req.add_header('Content-Type', 'application/json')
+            with urllib.request.urlopen(req) as response:
+                data = json.loads(response.read().decode())
+            a = data.get('article', {})
+            return {
+                'id': a.get('id'),
+                'title': a.get('title'),
+                'body': a.get('body'),
+                'draft': a.get('draft'),
+                'promoted': a.get('promoted'),
+                'section_id': a.get('section_id'),
+                'updated_at': a.get('updated_at'),
+                'url': a.get('html_url')
+            }
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode() if e.fp else "No response body"
+            raise Exception(f"Failed to update article {article_id}: HTTP {e.code} - {e.reason}. {error_body}")
+        except Exception as e:
+            raise Exception(f"Failed to update article {article_id}: {str(e)}")
 
     def search_articles(self, query: str, per_page: int = 25, page: int = 1) -> Dict[str, Any]:
         try:

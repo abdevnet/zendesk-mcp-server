@@ -321,6 +321,33 @@ async def handle_list_tools() -> list[types.Tool]:
             }
         ),
         types.Tool(
+            name="update_article",
+            description="Update an existing Help Center article (title, body, draft status, etc.)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "article_id": {"type": "integer", "description": "The ID of the article to update"},
+                    "title": {"type": "string", "description": "New title for the article"},
+                    "body": {"type": "string", "description": "New HTML body content"},
+                    "label_names": {"type": "array", "items": {"type": "string"}, "description": "Labels for the article"}
+                },
+                "required": ["article_id"]
+            }
+        ),
+        types.Tool(
+            name="update_article_from_markdown",
+            description="Update a Help Center article from a local markdown file. Converts markdown to HTML automatically.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "article_id": {"type": "integer", "description": "The ID of the article to update"},
+                    "file_path": {"type": "string", "description": "Path to the local .md file"},
+                    "title": {"type": "string", "description": "Optional new title (keeps existing if omitted)"}
+                },
+                "required": ["article_id", "file_path"]
+            }
+        ),
+        types.Tool(
             name="update_ticket",
             description="Update fields on an existing Zendesk ticket (e.g., status, priority, assignee_id)",
             inputSchema={
@@ -469,6 +496,29 @@ async def handle_call_tool(
             return [types.TextContent(
                 type="text",
                 text=json.dumps(results, indent=2)
+            )]
+
+        elif name == "update_article":
+            if not arguments:
+                raise ValueError("Missing arguments")
+            article_id = arguments.pop("article_id")
+            updated = zendesk_client.update_article(article_id=article_id, **arguments)
+            return [types.TextContent(
+                type="text",
+                text=json.dumps({"message": "Article updated successfully", "article": updated}, indent=2)
+            )]
+
+        elif name == "update_article_from_markdown":
+            if not arguments:
+                raise ValueError("Missing arguments")
+            updated = zendesk_client.update_article_from_markdown(
+                article_id=arguments["article_id"],
+                file_path=arguments["file_path"],
+                title=arguments.get("title")
+            )
+            return [types.TextContent(
+                type="text",
+                text=json.dumps({"message": "Article updated from markdown", "article": updated}, indent=2)
             )]
 
         elif name == "update_ticket":
